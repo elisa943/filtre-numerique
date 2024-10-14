@@ -39,6 +39,9 @@ hold on;
 plot(0:N-1,spectre_puiss);
 plot(0:N-1,densite_spect);
 
+
+y = Mon_Daniell(nl);
+
 %% Chargement
 load data_Weierstrass.mat;
 load fcno03fz.mat;
