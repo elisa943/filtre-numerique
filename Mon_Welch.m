@@ -1,8 +1,7 @@
 function y = Mon_Welch(x, NFFT, Fe)
     N_ech = length(x);
     f = -Fe/2:Fe/NFFT:Fe/2-Fe/NFFT;
-    th=0.25*(sinc(f/2).*sin(pi*f/2)).^2;
-    th((NFFT/2)+1)=th((NFFT/2)+1)+0.25;
+    th=9*ones(1,length(f));
     nb_segments = floor(N_ech/NFFT);
     y = zeros(1, NFFT);
     segments = zeros(nb_segments, NFFT);
@@ -23,10 +22,10 @@ function y = Mon_Welch(x, NFFT, Fe)
     figure; 
     semilogy(f, fftshift(y));
     hold;
-    semilogy(f, NFFT*Fe*th);
+    semilogy(f, NFFT*th);
     grid;
     title("Comparaison densité spectrale (Méthode de Welch/Théorie)");
     xlabel("Fréquence en Hz"); ylabel("Puissance en dB");
     legend('Densité spectrale par Welch',"Densité spectrale théorique");
-    ylim([0.000001 25000])
+    ylim([600 25000])
 end
