@@ -32,13 +32,16 @@ subplot(2,2,4)
 scatter(-N+1:N-1,Nl2,"b*")
 subtitle("Estimateur non biaisé avec xcorr")
 
+Bartlett=Mon_Bartlett(nl,N/(2^8));
+Welch=Mon_Welch(nl,1000,8);
 spectre_puiss=(abs(fft(nl)).^2)/N;
 densite_spect=(sigma^2)*ones(1,N);
 figure
 hold on;
-plot(0:N-1,spectre_puiss);
-plot(0:N-1,densite_spect);
-
+plot(0:N-1,spectre_puiss)
+plot(0:N-1,densite_spect)
+plot(0:(2^8):N-1,Bartlett)
+legend("Spectre de puissance","Densité spectrale de puissance","Périodogramme de Bartlett")
 
 y = Mon_Daniell(nl);
 
