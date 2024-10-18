@@ -6,8 +6,8 @@ function y = Mon_Bartlett(x, K)
         segment = x(i*K + 1:i*K + M);
         sous_segments(i+1, 1:M) = abs(fft(segment)).^2 / M;
     end
-    y = zeros(1, K);
-    for i=1:K
+    y = zeros(1, M);
+    for i=1:M
         y(i) = mean(sous_segments(:, i));
     end
 end
