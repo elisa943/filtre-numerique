@@ -7,7 +7,7 @@ function y = Mon_Daniell(x)
         for j=-k:k
             vecteur_moyenne =  vecteur_moyenne + y(mod(i-1+j, N) + 1);
         end
-        y(i) = vecteur_moyenne / (2 * k + 1);
+        y(i) = vecteur_moyenne / (2* k + 1);
     end    
     
 end

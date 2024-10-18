@@ -50,7 +50,7 @@ title("Comparaison avec le Périodogramme de Bartlett");
 figure; 
 hold on;
 plot(0:N-1, spectre_puiss);
-M_daniell=mean(Daniell)/N;
+M_daniell=mean(Daniell/N);
 plot(Daniell/N);
 plot(0:N-1, densite_spect); 
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
@@ -90,3 +90,25 @@ subplot(2, 1, 2);
 spectrogram(x_bruite,100,80,100,fech,'yaxis');
 xlabel("Temps en secondes");
 title("Spectrogramme du signal de parole bruité");
+
+%% DFA
+clear; close all; clc;
+load data_Weierstrass.mat;
+load fcno03fz.mat;
+
+% Variable
+x=fcno03fz.';
+M=length(x);
+M_x=sum(x)/M;
+p=profil_signal(x,M_x);
+N_DFA=1000;
+L=floor(M/N_DFA);
+segments=segmentation(p,N_DFA,L);
+
+
+
+
+
+
+
+
