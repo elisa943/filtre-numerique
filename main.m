@@ -75,8 +75,8 @@ plot(time, x);
 title("Représentation temporelle du signal de parole");
 xlabel("Temps en secondes");
 subplot(2, 1, 2);
-[s,w,t] = spectrogram(x);
-plot(t, s);
+spectrogram(x,100,80,100,fech,'yaxis');
+xlabel("Temps en secondes");
 title("Spectrogramme du signal de parole");
 
 figure; 
@@ -85,5 +85,6 @@ plot(time, x_bruite);
 title("Représentation temporelle du signal de parole bruité");
 xlabel("Temps en secondes");
 subplot(2, 1, 2);
-spectrogram(x_bruite);
+spectrogram(x_bruite,100,80,100,fech,'yaxis');
+xlabel("Temps en secondes");
 title("Spectrogramme du signal de parole bruité");
