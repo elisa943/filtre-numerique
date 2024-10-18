@@ -1,7 +1,7 @@
 %% Préparation du code
 clear; close all; clc;
 
-%% Variable
+% Variable
 
 %Bruit
 sigma=3;
@@ -56,21 +56,37 @@ plot(0:N-1, densite_spect);
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
 title("Comparaison avec le Périodogramme de Daniell");
 
+% Corrélogramme 
+y = Mon_correlogramme(nl);
+figure; 
+hold on;
+plot(0:N-1, spectre_puiss);
+plot(y);
+plot(0:N-1, densite_spect); 
+legend("Spectre de puissance", "Corrélogramme", "Densité spectrale de puissance")
+title("Corrélogramme");
+
 %% Chargement
 clear; close all; clc;
 load data_Weierstrass.mat;
 load fcno03fz.mat;
 
 % Bruitage du signal de parole 
-RSB = 5; % dB
+RSB = 10; % dB
 x = fcno03fz.';
 N = length(x);
 x_bruite = bruite_signal(x, RSB);
 fech = 8000;
 time = 0:1/fech:(N-1)/fech;
-% sound(x, fech);
-% sound(x_bruite,fech);
 
+% Bruitage du signal de Weierstrass
+cell = data(1, 1);
+s_Weierstrass = cell{1}';
+Weierstrass_bruite = bruite_signal(s_Weierstrass, RSB);
+N_Weierstrass = length(s_Weierstrass);
+time_Weierstrass = 0:1/fech:(N_Weierstrass-1)/fech;
+
+% Affichage du signal de parole avec et sans bruit 
 figure; 
 subplot(2, 1, 1);
 plot(time, x);
@@ -91,6 +107,28 @@ spectrogram(x_bruite,100,80,100,fech,'yaxis');
 xlabel("Temps en secondes");
 title("Spectrogramme du signal de parole bruité");
 
+
+% Affichage d'un signal de Weierstrass avec et sans bruit 
+figure; 
+subplot(2, 1, 1);
+plot(time_Weierstrass, s_Weierstrass);
+title("Représentation temporelle du signal de Weierstrass");
+xlabel("Temps en secondes");
+subplot(2, 1, 2);
+spectrogram(s_Weierstrass,100,80,100,fech,'yaxis');
+xlabel("Temps en secondes");
+title("Spectrogramme du signal de Weierstrass");
+
+figure; 
+subplot(2, 1, 1);
+plot(time_Weierstrass, Weierstrass_bruite);
+title("Représentation temporelle du signal de Weierstrass bruité");
+xlabel("Temps en secondes");
+subplot(2, 1, 2);
+spectrogram(Weierstrass_bruite,100,80,100,fech,'yaxis');
+xlabel("Temps en secondes");
+title("Spectrogramme du signal de Weierstrass bruité");
+
 %% DFA
 clear; close all; clc;
 load data_Weierstrass.mat;
@@ -104,11 +142,3 @@ p=profil_signal(x,M_x);
 N_DFA=1000;
 L=floor(M/N_DFA);
 segments=segmentation(p,N_DFA,L);
-
-
-
-
-
-
-
-
