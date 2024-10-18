@@ -135,10 +135,16 @@ load data_Weierstrass.mat;
 load fcno03fz.mat;
 
 % Variable
-x=fcno03fz.';
+cell=data(1,1);
+x=cell{1}';
 M=length(x);
 M_x=sum(x)/M;
 p=profil_signal(x,M_x);
 N_DFA=1000;
 L=floor(M/N_DFA);
 segments=segmentation(p,N_DFA,L);
+t=segments;
+tglob=[];
+for i=1:32
+    t(i,:)=tendance(segments(i,:));
+end
