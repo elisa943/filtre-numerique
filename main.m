@@ -6,6 +6,7 @@ clear; close all; clc;
 %Bruit
 sigma=3;
 N=2^15;
+K=2^8;
 nl = sigma*(randn(1,N));
 Nl=xcorr(nl,"biased");
 Nl2=xcorr(nl,"unbiased");
@@ -32,25 +33,26 @@ subplot(2,2,4)
 scatter(-N+1:N-1,Nl2,"b*")
 subtitle("Estimateur non biaisé avec xcorr")
 
+Bartlett=Mon_Bartlett(nl,N/K);
+Welch=Mon_Welch(nl,1000,8);
 spectre_puiss=(abs(fft(nl)).^2)/N;
 densite_spect=(sigma^2)*ones(1,N);
-Bartlett=Mon_Bartlett(nl,N/(2^8));
-Welch=Mon_Welch(nl,1000,8);
+M_sp=mean(spectre_puiss);
 Daniell = Mon_Daniell(nl);
-
-figure;
+figure
 hold on;
-plot(0:N-1,spectre_puiss);
-plot(0:N-1,densite_spect);
-plot(0:(2^7):N-1,Bartlett);
+plot(0:N-1,spectre_puiss)
+plot(0:N/K:N-1,Bartlett)
+plot(0:N-1,densite_spect)
 legend("Spectre de puissance","Densité spectrale de puissance","Périodogramme de Bartlett");
 title("Comparaison avec le Périodogramme de Bartlett");
 
 figure; 
 hold on;
-plot(0:N-1, densite_spect); 
 plot(0:N-1, spectre_puiss);
-plot(Daniell);
+M_daniell=mean(Daniell)/N;
+plot(Daniell/N);
+plot(0:N-1, densite_spect); 
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
 title("Comparaison avec le Périodogramme de Daniell");
 
