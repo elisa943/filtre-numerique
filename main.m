@@ -1,7 +1,7 @@
 %% Préparation du code
 clear; close all; clc;
 
-%% Variable
+% Variable
 
 %Bruit
 sigma=3;
@@ -56,6 +56,16 @@ plot(0:N-1, densite_spect);
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
 title("Comparaison avec le Périodogramme de Daniell");
 
+% Corrélogramme 
+y = Mon_correlogramme(nl);
+figure; 
+hold on;
+plot(0:N-1, spectre_puiss);
+plot(0:1/2:N-1, y);
+plot(0:N-1, densite_spect); 
+legend("Spectre de puissance", "Corrélogramme", "Densité spectrale de puissance")
+title("Corrélogramme");
+
 %% Chargement
 clear; close all; clc;
 load data_Weierstrass.mat;
@@ -68,8 +78,6 @@ N = length(x);
 x_bruite = bruite_signal(x, RSB);
 fech = 8000;
 time = 0:1/fech:(N-1)/fech;
-% sound(x, fech);
-% sound(x_bruite,fech);
 
 figure; 
 subplot(2, 1, 1);
