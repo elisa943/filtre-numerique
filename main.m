@@ -32,24 +32,34 @@ subplot(2,2,4)
 scatter(-N+1:N-1,Nl2,"b*")
 subtitle("Estimateur non biaisé avec xcorr")
 
-Bartlett=Mon_Bartlett(nl,N/(2^8));
-Welch=Mon_Welch(nl,1000,8);
 spectre_puiss=(abs(fft(nl)).^2)/N;
 densite_spect=(sigma^2)*ones(1,N);
-figure
-hold on;
-plot(0:N-1,spectre_puiss)
-plot(0:N-1,densite_spect)
-plot(0:(2^8):N-1,Bartlett)
-legend("Spectre de puissance","Densité spectrale de puissance","Périodogramme de Bartlett")
+Bartlett=Mon_Bartlett(nl,N/(2^8));
+Welch=Mon_Welch(nl,1000,8);
+Daniell = Mon_Daniell(nl);
 
-y = Mon_Daniell(nl);
+figure;
+hold on;
+plot(0:N-1,spectre_puiss);
+plot(0:N-1,densite_spect);
+plot(0:(2^7):N-1,Bartlett);
+legend("Spectre de puissance","Densité spectrale de puissance","Périodogramme de Bartlett");
+title("Comparaison avec le Périodogramme de Bartlett");
+
+figure; 
+hold on;
+plot(0:N-1, densite_spect); 
+plot(0:N-1, spectre_puiss);
+plot(Daniell);
+legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
+title("Comparaison avec le Périodogramme de Daniell");
 
 %% Chargement
+clear; close all; clc;
 load data_Weierstrass.mat;
 load fcno03fz.mat;
 
-%% Bruitage du signal de parole 
+% Bruitage du signal de parole 
 RSB = 5; % dB
 x = fcno03fz.';
 N = length(x);
@@ -65,7 +75,8 @@ plot(time, x);
 title("Représentation temporelle du signal de parole");
 xlabel("Temps en secondes");
 subplot(2, 1, 2);
-spectrogram(x);
+[s,w,t] = spectrogram(x);
+plot(t, s);
 title("Spectrogramme du signal de parole");
 
 figure; 
