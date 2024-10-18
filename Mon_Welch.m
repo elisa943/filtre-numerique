@@ -20,12 +20,11 @@ function y = Mon_Welch(x, NFFT, Fe)
 
     % Affichage de la densité spectrale
     figure; 
-    semilogy(f, fftshift(y));
+    semilogy(f, fftshift(y)/NFFT);
     hold;
-    semilogy(f, NFFT*th);
+    semilogy(f, th);
     grid;
     title("Comparaison densité spectrale (Méthode de Welch/Théorie)");
     xlabel("Fréquence en Hz"); ylabel("Puissance en dB");
     legend('Densité spectrale par Welch',"Densité spectrale théorique");
-    ylim([600 25000])
 end

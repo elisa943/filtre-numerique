@@ -37,7 +37,7 @@ Bartlett=Mon_Bartlett(nl,N/K);
 Welch=Mon_Welch(nl,1000,8);
 spectre_puiss=(abs(fft(nl)).^2)/N;
 densite_spect=(sigma^2)*ones(1,N);
-M=mean(spectre_puiss);
+M_sp=mean(spectre_puiss);
 Daniell = Mon_Daniell(nl);
 figure
 hold on;
@@ -49,9 +49,10 @@ title("Comparaison avec le Périodogramme de Bartlett");
 
 figure; 
 hold on;
-plot(0:N-1, densite_spect); 
 plot(0:N-1, spectre_puiss);
-plot(Daniell);
+M_daniell=mean(Daniell)/N;
+plot(Daniell/N);
+plot(0:N-1, densite_spect); 
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
 title("Comparaison avec le Périodogramme de Daniell");
 
