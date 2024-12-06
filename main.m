@@ -135,8 +135,13 @@ load data_Weierstrass.mat;
 load fcno03fz.mat;
 
 % Variables
+SNR=5;
+eb_n0 = 10.^(SNR/10);
+sigma = 1/eb_n0;
 cell = data(1, 1);
 x = cell{1}';
+bruit=sqrt(sigma) * randn(size(x));
+x=x+bruit;
 M = length(x);
 M_x = sum(x) / M; % Moyenne empirique 
 
@@ -150,7 +155,7 @@ for N_DFA = abscisse
 
     tglob = [];
     for i = 1:L
-        tglob = cat(2, tglob, tendance(segments(i, :), i));
+        tglob = cat(2, tglob, tendance_2(segments(i, :), i));
     end
     
     residu = p(1:length(tglob)) - tglob; 
@@ -158,9 +163,8 @@ for N_DFA = abscisse
 end
 
 % Affichage
-figure; 
+figure;hold on; 
 plot(log(abscisse), log(puissance_residu));
 title("Log-log de la fonction de fluctuation");
 
-% Recherche de la pente 
-
+% Recherche de la pente pente
