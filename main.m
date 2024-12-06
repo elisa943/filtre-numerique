@@ -163,4 +163,14 @@ plot(log(abscisse), log(puissance_residu));
 title("Log-log de la fonction de fluctuation");
 
 % Recherche de la pente 
+alpha = pente(log(abscisse), log(puissance_residu)); 
+H = alpha - 1;
+epsilon = 1e-3;
 
+if 0.5 < H && H < 1
+    disp("Mémoire longue");
+elseif abs(5 - H) < epsilon
+    disp("Mémoire courte"); 
+else 
+    disp("Mémoire négative"); 
+end
