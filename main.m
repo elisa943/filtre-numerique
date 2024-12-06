@@ -134,17 +134,32 @@ clear; close all; clc;
 load data_Weierstrass.mat;
 load fcno03fz.mat;
 
-% Variable
-cell=data(1,1);
-x=cell{1}';
-M=length(x);
-M_x=sum(x)/M;
-p=profil_signal(x,M_x);
-N_DFA=1000;
-L=floor(M/N_DFA);
-segments=segmentation(p,N_DFA,L);
-t=segments;
-tglob=[];
-for i=1:32
-    t(i,:)=tendance(segments(i,:));
+% Variables
+
+cell = data(5, 1);
+x = cell{1}';
+M = length(x);
+M_x = sum(x) / M; % Moyenne empirique 
+
+p = profil_signal(x, M_x);
+puissance_residu = [];
+abscisse = 10:3000;
+
+for N_DFA = abscisse
+    L = floor(M / N_DFA);
+    segments = segmentation(p, N_DFA, L);
+
+    tglob = [];
+    for i = 1:L
+        tglob = cat(2, tglob, tendance(segments(i, :), i));
+    end
+    
+    residu = p(1:length(tglob)) - tglob; 
+    puissance_residu = cat(2, puissance_residu, sum(residu.^2)); % Carré de la fonction de fluctuation
 end
+
+% Affichage
+
+figure; 
+plot(log(abscisse), log(puissance_residu));
+title("Log-log de la fonction de fluctuation");
