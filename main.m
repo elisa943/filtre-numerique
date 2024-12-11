@@ -56,7 +56,8 @@ plot(0:N-1, densite_spect);
 legend("Densité spectrale de puissance", "Spectre de puissance", "Périodogramme de Daniell");
 title("Comparaison avec le Périodogramme de Daniell");
 
-% Corrélogramme 
+
+%% Corrélogramme 
 y = Mon_correlogramme(nl);
 figure; 
 hold on;
@@ -142,7 +143,7 @@ M_x = sum(x) / M; % Moyenne empirique
 
 p = profil_signal(x, M_x);
 puissance_residu = [];
-abscisse = 10:3000;
+abscisse = 2:8000;
 
 for N_DFA = abscisse
     L = floor(M / N_DFA);
@@ -156,6 +157,8 @@ for N_DFA = abscisse
     residu = p(1:length(tglob)) - tglob; 
     puissance_residu = cat(2, puissance_residu, sum(residu.^2)); % Carré de la fonction de fluctuation
 end
+
+puissance_residu = sqrt(puissance_residu); 
 
 % Affichage
 figure; 
@@ -174,3 +177,5 @@ elseif abs(5 - H) < epsilon
 else 
     disp("Mémoire négative"); 
 end
+
+% https://www.gretsi.fr/data/colloque/pdf/2019_berthelot509.pdf
