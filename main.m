@@ -136,46 +136,53 @@ load data_Weierstrass.mat;
 load fcno03fz.mat;
 
 % Variables
-cell = data(1, 1);
-x = cell{1}';
-M = length(x);
-M_x = sum(x) / M; % Moyenne empirique 
-
-p = profil_signal(x, M_x);
-puissance_residu = [];
-abscisse = 2:8000;
-
-for N_DFA = abscisse
-    L = floor(M / N_DFA);
-    segments = segmentation(p, N_DFA, L);
-
-    tglob = [];
-    for i = 1:L
-        tglob = cat(2, tglob, tendance(segments(i, :), i));
-    end
+t=1:1000;
+T_exp=exp(t);
+T_log=log(t);
+SNR=5;
+eb_n0 = 10.^(SNR/10);
+sigma = 1/eb_n0;
+Hs=zeros(1,50);
+for k=1:50
+    cell = data(1, k);
+    x = cell{1}';
+    %x=T_log.';
+    bruit=sqrt(sigma) * randn(size(x));
+    %x=x+bruit;
+    M = length(x);
+    M_x = sum(x) / M; % Moyenne empirique 
     
-    residu = p(1:length(tglob)) - tglob; 
-    puissance_residu = cat(2, puissance_residu, sum(residu.^2)); % Carré de la fonction de fluctuation
+    p = profil_signal(x, M_x);
+    puissance_residu = [];
+    abscisse = 2:8000;
+    for N_DFA = abscisse
+        L = floor(M / N_DFA);
+        segments = segmentation(p, N_DFA, L);
+        tglob = [];
+        for i = 1:L
+            tglob = cat(2, tglob, tendance(segments(i, :), i));
+        end
+        residu = p(1:length(tglob)) - tglob;
+        puissance_residu = cat(2, puissance_residu, var(residu)); % Carré de la fonction de fluctuation
+    end
+    puissance_residu=sqrt(puissance_residu);
+    % Affichage
+    %figure;hold on; 
+    %plot(log(abscisse), log(puissance_residu));
+    %title("Log-log de la fonction de fluctuation");
+    
+    % Recherche de la pente 
+    alpha = pente(log(abscisse), log(puissance_residu)); 
+    H = alpha - 1;
+    epsilon = 1e-3;
+    
+    if 0.5 < H && H < 1
+        disp("Mémoire longue");
+    elseif abs(5 - H) < epsilon
+        disp("Mémoire courte"); 
+    else 
+        disp("Mémoire négative"); 
+    end
+    Hs(k)=H;
 end
-
-puissance_residu = sqrt(puissance_residu); 
-
-% Affichage
-figure; 
-plot(log(abscisse), log(puissance_residu));
-title("Log-log de la fonction de fluctuation");
-
-% Recherche de la pente 
-alpha = pente(log(abscisse), log(puissance_residu)); 
-H = alpha - 1;
-epsilon = 1e-3;
-
-if 0.5 < H && H < 1
-    disp("Mémoire longue");
-elseif abs(5 - H) < epsilon
-    disp("Mémoire courte"); 
-else 
-    disp("Mémoire négative"); 
-end
-
-% https://www.gretsi.fr/data/colloque/pdf/2019_berthelot509.pdf
+disp(sum(Hs)/50)
