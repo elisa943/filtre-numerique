@@ -1,196 +1,157 @@
 import tkinter as tk
-from tkinter import filedialog, simpledialog, messagebox
+from tkinter import filedialog
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.linalg import pinv
+from scipy.signal import periodogram
+from sklearn.linear_model import LinearRegression
 
-# Fonction pour calculer le profil du signal
-def profil_signal(x, M_x):
-    N = len(x)
-    p = np.zeros(N)
-    c = x - M_x
-    for i in range(N):
-        p[i] = np.sum(c[:i+1])
-    return p
+class SignalProcessor:
+    def __init__(self):
+        self.signal = None
+        self.noisy_signal = None
+        self.profile = None
+        self.tendency = None
+        self.residue = None
 
-# Fonction pour calculer la tendance locale
-def tendance_2(segment, i, N):
-    x = np.arange(i * N, (i + 1) * N)
-    y = segment
+    def load_signal(self, filepath):
+        self.signal = np.loadtxt(filepath)
+        self.noisy_signal = self.signal.copy()
 
-    B = y.reshape(-1, 1)
-    A = np.vstack([x**2, x, np.ones_like(x)]).T
+    def add_noise(self, rsb):
+        noise = np.random.normal(0, np.std(self.signal) / rsb, self.signal.shape)
+        self.noisy_signal = self.signal + noise
 
-    coeff = pinv(A) @ B
-    a, b, c = coeff.flatten()
-    return a * x**2 + b * x + c
+    def calculate_profile(self):
+        M_x = np.mean(self.noisy_signal)
+        N = len(self.noisy_signal)
+        self.profile = np.cumsum(self.noisy_signal - M_x)
 
-# Fonction pour calculer le résidu
-def calcul_residu(profil, N):
-    L = len(profil) // N
-    profil = profil[:L * N]
-    residu = np.zeros_like(profil)
+    def calculate_tendency(self, N):
+        L = len(self.profile) // N
+        tendency = np.zeros(L * N)
+        for i in range(L):
+            segment = self.profile[i * N:(i + 1) * N]
+            x = np.arange(i * N, (i + 1) * N)
+            A = np.vstack([x**2, x, np.ones(N)]).T
+            coeff = np.linalg.lstsq(A, segment, rcond=None)[0]
+            tendency[i * N:(i + 1) * N] = coeff[0] * x**2 + coeff[1] * x + coeff[2]
+        self.tendency = tendency
 
-    for i in range(L):
-        segment = profil[i * N:(i + 1) * N]
-        tendance_loc = tendance_2(segment, i, N)
-        residu[i * N:(i + 1) * N] = segment - tendance_loc
+    def calculate_residue(self):
+        if self.tendency is None:
+            raise ValueError("Tendency has not been calculated. Please calculate tendency before calculating residue.")
+        self.residue = self.profile[:len(self.tendency)] - self.tendency
 
-    return residu
+    def calculate_F2(self, N):
+        if self.residue is None:
+            raise ValueError("Residue has not been calculated. Please calculate residue before calculating F2.")
+        L = len(self.residue) // N
+        F2 = np.zeros(L)
+        for i in range(L):
+            segment = self.residue[i * N:(i + 1) * N]
+            F2[i] = np.var(segment)
+        return np.log(F2)
 
-# Classe principale de l'interface graphique
-class SignalApp:
+class GUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Analyse de Signal")
+        self.root.title("Signal Processor")
+        self.processor = SignalProcessor()
 
-        self.signal = None
-        self.noised_signal = None
-        self.mean_signal = 0
+        self.canvas = tk.Canvas(root, width=800, height=400)
+        self.canvas.pack()
 
-        # Zone d'affichage
-        self.figure, self.ax = plt.subplots()
-        self.canvas = None
-        self.create_canvas()
+        self.load_button = tk.Button(root, text="Charger Signal", command=self.load_signal)
+        self.load_button.pack(side=tk.LEFT)
 
-        # Boutons et champs de l'interface
-        self.create_controls()
+        self.noise_button = tk.Button(root, text="Bruit RSB", command=self.add_noise)
+        self.noise_button.pack(side=tk.LEFT)
 
-    def create_canvas(self):
-        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+        self.reload_button = tk.Button(root, text="Recharger Signal", command=self.reload_signal)
+        self.reload_button.pack(side=tk.LEFT)
 
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.periodogram_button = tk.Button(root, text="Périodogramme", command=self.show_periodogram)
+        self.periodogram_button.pack(side=tk.LEFT)
 
-    def create_controls(self):
-        frame = tk.Frame(self.root)
-        frame.pack(side=tk.BOTTOM, fill=tk.X)
+        self.profile_button = tk.Button(root, text="Profil", command=self.show_profile)
+        self.profile_button.pack(side=tk.LEFT)
 
-        tk.Button(frame, text="Charger Signal", command=self.load_signal).pack(side=tk.LEFT)
-        tk.Button(frame, text="Bruit RSB", command=self.add_noise).pack(side=tk.LEFT)
-        tk.Button(frame, text="Afficher Périodogramme", command=self.show_periodogram).pack(side=tk.LEFT)
-        tk.Button(frame, text="Afficher Profil", command=self.show_profile).pack(side=tk.LEFT)
-        tk.Button(frame, text="Afficher Tendance", command=self.show_trends).pack(side=tk.LEFT)
-        tk.Button(frame, text="Afficher Résidu", command=self.show_residu).pack(side=tk.LEFT)
-        tk.Button(frame, text="Afficher F2(N)", command=self.show_F2).pack(side=tk.LEFT)
+        self.tendency_button = tk.Button(root, text="Tendance", command=self.show_tendency)
+        self.tendency_button.pack(side=tk.LEFT)
+
+        self.residue_button = tk.Button(root, text="Résidu", command=self.show_residue)
+        self.residue_button.pack(side=tk.LEFT)
+
+        self.F2_button = tk.Button(root, text="Courbe F2(N)", command=self.show_F2)
+        self.F2_button.pack(side=tk.LEFT)
+
+        self.rsb_entry = tk.Entry(root)
+        self.rsb_entry.pack(side=tk.LEFT)
+        self.rsb_entry.insert(0, "RSB")
+
+        self.N_entry = tk.Entry(root)
+        self.N_entry.pack(side=tk.LEFT)
+        self.N_entry.insert(0, "N")
 
     def load_signal(self):
-        file_path = filedialog.askopenfilename()
-        if file_path:
-            try:
-                self.signal = np.loadtxt(file_path)
-                self.mean_signal = np.mean(self.signal)
-                self.noised_signal = self.signal.copy()
-                self.plot_signal(self.signal, "Signal Initial")
-            except Exception as e:
-                messagebox.showerror("Erreur", f"Impossible de charger le signal : {e}")
+        filepath = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        if filepath:
+            self.processor.load_signal(filepath)
+            self.plot_signal(self.processor.signal)
 
     def add_noise(self):
-        if self.signal is None:
-            messagebox.showerror("Erreur", "Aucun signal chargé.")
-            return
+        rsb = float(self.rsb_entry.get())
+        self.processor.add_noise(rsb)
+        self.plot_signal(self.processor.noisy_signal)
 
-        try:
-            rsb = simpledialog.askfloat("RSB", "Entrez le RSB (en dB) :")
-            if rsb is None:
-                return
-
-            puissance_signal = np.mean(self.signal**2)
-            puissance_bruit = puissance_signal / (10**(rsb / 10))
-            bruit = np.random.normal(0, np.sqrt(puissance_bruit), size=self.signal.shape)
-
-            self.noised_signal = self.signal + bruit
-            self.plot_signal(self.noised_signal, "Signal Bruité")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du bruitage : {e}")
+    def reload_signal(self):
+        self.processor.noisy_signal = self.processor.signal.copy()
+        self.plot_signal(self.processor.signal)
 
     def show_periodogram(self):
-        if self.noised_signal is None:
-            messagebox.showerror("Erreur", "Aucun signal à analyser.")
-            return
-
-        freq, Pxx = plt.psd(self.noised_signal, NFFT=256, Fs=1)
-        self.ax.clear()
-        self.ax.plot(freq, Pxx)
-        self.ax.set_title("Périodogramme")
-        self.canvas.draw()
+        f, Pxx = periodogram(self.processor.noisy_signal)
+        plt.figure()
+        plt.semilogy(f, Pxx)
+        plt.title("Périodogramme")
+        plt.xlabel("Fréquence")
+        plt.ylabel("Densité spectrale de puissance")
+        plt.show()
 
     def show_profile(self):
-        if self.noised_signal is None:
-            messagebox.showerror("Erreur", "Aucun signal à analyser.")
-            return
+        self.processor.calculate_profile()
+        self.plot_signal(self.processor.profile)
 
-        profil = profil_signal(self.noised_signal, self.mean_signal)
-        self.plot_signal(profil, "Profil du Signal")
+    def show_tendency(self):
+        N = int(self.N_entry.get())
+        self.processor.calculate_tendency(N)
+        self.plot_signal(self.processor.tendency)
 
-    def show_trends(self):
-        if self.noised_signal is None:
-            messagebox.showerror("Erreur", "Aucun signal à analyser.")
-            return
-
-        try:
-            N = simpledialog.askinteger("Taille des parties", "Entrez la taille N des parties :")
-            if N is None:
-                return
-
-            profil = profil_signal(self.noised_signal, self.mean_signal)
-            L = len(profil) // N
-            profil = profil[:L * N]
-
-            tendance_globale = np.zeros_like(profil)
-            for i in range(L):
-                segment = profil[i * N:(i + 1) * N]
-                tendance_globale[i * N:(i + 1) * N] = tendance_2(segment, i, N)
-
-            self.plot_signal(tendance_globale, "Tendance Globale")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du calcul des tendances : {e}")
-
-    def show_residu(self):
-        if self.noised_signal is None:
-            messagebox.showerror("Erreur", "Aucun signal à analyser.")
-            return
-
-        try:
-            N = simpledialog.askinteger("Taille des parties", "Entrez la taille N des parties :")
-            if N is None:
-                return
-
-            profil = profil_signal(self.noised_signal, self.mean_signal)
-            residu = calcul_residu(profil, N)
-            self.plot_signal(residu, "Résidu du Profil")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du calcul du résidu : {e}")
+    def show_residue(self):
+        self.processor.calculate_residue()
+        self.plot_signal(self.processor.residue)
 
     def show_F2(self):
-        if self.noised_signal is None:
-            messagebox.showerror("Erreur", "Aucun signal à analyser.")
-            return
+        N = int(self.N_entry.get())
+        F2 = self.processor.calculate_F2(N)
+        x = np.arange(1, len(F2) + 1)
+        plt.figure()
+        plt.plot(x, F2, label="F2(N)")
+        plt.title("Courbe F2(N)")
+        plt.xlabel("N")
+        plt.ylabel("log(F2(N))")
+        plt.legend()
+        plt.show()
 
-        try:
-            N = simpledialog.askinteger("Taille des parties", "Entrez la taille N des parties :")
-            if N is None:
-                return
+    def plot_signal(self, signal):
+        self.canvas.delete("all")
+        width = self.canvas.winfo_width()
+        height = self.canvas.winfo_height()
+        x = np.linspace(0, width, len(signal))
+        y = height / 2 - signal * height / (2 * np.max(np.abs(signal)))
+        points = np.array([x, y]).T.flatten().tolist()
+        self.canvas.create_line(points, fill="blue")
 
-            profil = profil_signal(self.noised_signal, self.mean_signal)
-            residu = calcul_residu(profil, N)
-
-            L = len(residu) // N
-            F2 = [np.var(residu[i * N:(i + 1) * N]) for i in range(L)]
-            log_F2 = np.log(F2)
-
-            self.plot_signal(log_F2, "log(F2(N))")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du calcul de F2(N) : {e}")
-
-    def plot_signal(self, signal, title):
-        self.ax.clear()
-        self.ax.plot(signal)
-        self.ax.set_title(title)
-        self.canvas.draw()
-
-# Lancer l'application
 if __name__ == "__main__":
     root = tk.Tk()
-    app = SignalApp(root)
+    gui = GUI(root)
     root.mainloop()
