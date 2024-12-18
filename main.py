@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.signal import periodogram
 from sklearn.linear_model import LinearRegression
 
@@ -58,39 +59,47 @@ class GUI:
         self.root.title("Signal Processor")
         self.processor = SignalProcessor()
 
-        self.canvas = tk.Canvas(root, width=800, height=400)
-        self.canvas.pack()
+        # Créer des cadres pour organiser les widgets
+        self.frame_buttons = tk.Frame(root)
+        self.frame_buttons.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.load_button = tk.Button(root, text="Charger Signal", command=self.load_signal)
-        self.load_button.pack(side=tk.LEFT)
+        self.frame_canvas = tk.Frame(root)
+        self.frame_canvas.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        self.noise_button = tk.Button(root, text="Bruit RSB", command=self.add_noise)
-        self.noise_button.pack(side=tk.LEFT)
+        self.figure, self.ax = plt.subplots(figsize=(8, 4))
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.frame_canvas)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        self.reload_button = tk.Button(root, text="Recharger Signal", command=self.reload_signal)
-        self.reload_button.pack(side=tk.LEFT)
+        self.load_button = tk.Button(self.frame_buttons, text="Charger Signal", command=self.load_signal)
+        self.load_button.pack(pady=5)
 
-        self.periodogram_button = tk.Button(root, text="Périodogramme", command=self.show_periodogram)
-        self.periodogram_button.pack(side=tk.LEFT)
+        self.noise_button = tk.Button(self.frame_buttons, text="Bruit RSB", command=self.add_noise)
+        self.noise_button.pack(pady=5)
 
-        self.profile_button = tk.Button(root, text="Profil", command=self.show_profile)
-        self.profile_button.pack(side=tk.LEFT)
+        self.reload_button = tk.Button(self.frame_buttons, text="Recharger Signal", command=self.reload_signal)
+        self.reload_button.pack(pady=5)
 
-        self.tendency_button = tk.Button(root, text="Tendance", command=self.show_tendency)
-        self.tendency_button.pack(side=tk.LEFT)
+        self.periodogram_button = tk.Button(self.frame_buttons, text="Périodogramme", command=self.show_periodogram)
+        self.periodogram_button.pack(pady=5)
 
-        self.residue_button = tk.Button(root, text="Résidu", command=self.show_residue)
-        self.residue_button.pack(side=tk.LEFT)
+        self.profile_button = tk.Button(self.frame_buttons, text="Profil", command=self.show_profile)
+        self.profile_button.pack(pady=5)
 
-        self.F2_button = tk.Button(root, text="Courbe F2(N)", command=self.show_F2)
-        self.F2_button.pack(side=tk.LEFT)
+        self.tendency_button = tk.Button(self.frame_buttons, text="Tendance", command=self.show_tendency)
+        self.tendency_button.pack(pady=5)
 
-        self.rsb_entry = tk.Entry(root)
-        self.rsb_entry.pack(side=tk.LEFT)
+        self.residue_button = tk.Button(self.frame_buttons, text="Résidu", command=self.show_residue)
+        self.residue_button.pack(pady=5)
+
+        self.F2_button = tk.Button(self.frame_buttons, text="Courbe F2(N)", command=self.show_F2)
+        self.F2_button.pack(pady=5)
+
+        self.rsb_entry = tk.Entry(self.frame_buttons)
+        self.rsb_entry.pack(pady=5)
         self.rsb_entry.insert(0, "RSB")
 
-        self.N_entry = tk.Entry(root)
-        self.N_entry.pack(side=tk.LEFT)
+        self.N_entry = tk.Entry(self.frame_buttons)
+        self.N_entry.pack(pady=5)
         self.N_entry.insert(0, "N")
 
     def load_signal(self):
@@ -100,9 +109,12 @@ class GUI:
             self.plot_signal(self.processor.signal)
 
     def add_noise(self):
-        rsb = float(self.rsb_entry.get())
-        self.processor.add_noise(rsb)
-        self.plot_signal(self.processor.noisy_signal)
+        try:
+            rsb = float(self.rsb_entry.get())
+            self.processor.add_noise(rsb)
+            self.plot_signal(self.processor.noisy_signal)
+        except ValueError:
+            print("Veuillez entrer une valeur numérique pour le RSB.")
 
     def reload_signal(self):
         self.processor.noisy_signal = self.processor.signal.copy()
@@ -131,25 +143,34 @@ class GUI:
         self.plot_signal(self.processor.residue)
 
     def show_F2(self):
-        N = int(self.N_entry.get())
-        F2 = self.processor.calculate_F2(N)
-        x = np.arange(1, len(F2) + 1)
+        self.processor.calculate_residue()
+        N_values = np.arange(10, 8001)
+        F2_values = []
+
+        for N in N_values:
+            self.processor.calculate_tendency(N)
+            self.processor.calculate_residue()
+            F2 = np.sqrt(np.var(self.processor.residue))
+            F2_values.append(F2)
+
+        log_N = np.log(N_values)
+        log_F2 = np.log(F2_values)
+
         plt.figure()
-        plt.plot(x, F2, label="F2(N)")
+        plt.plot(log_N, log_F2, label="F2(N)")
         plt.title("Courbe F2(N)")
-        plt.xlabel("N")
+        plt.xlabel("log(N)")
         plt.ylabel("log(F2(N))")
         plt.legend()
         plt.show()
 
     def plot_signal(self, signal):
-        self.canvas.delete("all")
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
-        x = np.linspace(0, width, len(signal))
-        y = height / 2 - signal * height / (2 * np.max(np.abs(signal)))
-        points = np.array([x, y]).T.flatten().tolist()
-        self.canvas.create_line(points, fill="blue")
+        self.ax.clear()
+        self.ax.plot(signal, color="blue")
+        self.ax.set_xlabel("Échantillons")
+        self.ax.set_ylabel("Amplitude")
+        self.ax.set_title("Signal")
+        self.canvas.draw()
 
 if __name__ == "__main__":
     root = tk.Tk()
